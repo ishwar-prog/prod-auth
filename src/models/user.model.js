@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
         required: [true, "Username is required"],
         unique: [true, "Username is already taken"]
     },
-    emial:{
+    email:{
         type:String,
         required: [true, "Email is required"],
         unique: [true, "Email is already taken"]
