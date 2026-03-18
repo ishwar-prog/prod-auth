@@ -28,35 +28,54 @@ export async function register(req, res) {
     password: hashedPassword,
   });
 
-  const token = jwt.sign(
+  const accessToken = jwt.sign(
     {
       id: user._id,
     },
     config.JWT_SECRET,
     {
-      expiresIn: "1d",
+      expiresIn: "15m",
     },
   );
+
+  const refreshToken = jwt.sign(
+    {
+      id: user._id,
+    },
+    config.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    },
+  );
+
+  res.cookie("refreshtoken", refreshToken, {
+    httpOnly: true,
+    secure:true,
+    sameSite: "strict", 
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  })
+
   res.status(201).json({
     message: "User registered successfully",
     user: {
       username: user.username,
       email: user.email,
     },
-    token,
+    accessToken,
+    refreshToken,
   });
 }
 
 export async function getMe(req, res) {
-  const token = req.headers.authorization?.split(" ")[1];
+  const accessToken = req.headers.authorization?.split(" ")[1];
 
-  if (!token) {
+  if (!accessToken) {
     return res.status(401).json({
-      message: "token not found",
+      message: "Access token not found",
     });
   }
 
-  const decoded = jwt.verify(token, config.JWT_SECRET);
+  const decoded = jwt.verify(accessToken, config.JWT_SECRET);
 
   const user = await userModel.findById(decoded.id);
 
@@ -67,4 +86,30 @@ export async function getMe(req, res) {
       email: user.email,
     },
   });
+}
+
+export async function refreshToken(req,res){
+    const refreshToken = req.cookies.refreshtoken;
+
+    if(!refreshToken){
+        return res.status(401).json({
+            message:"Refresh token not found"
+        })
+    }
+
+    const decoded = jwt.verify(refreshToken, config.JWT_SECRET);
+
+    const accessToken = jwt.sign(
+        {
+            id:decoded.id
+        },
+        config.JWT_SECRET,
+        {
+            expiresIn:"15m"
+        }
+    )
+    res.status(200).json({
+        message:"Access Token refreshed successfully",
+        accessToken
+    })
 }
