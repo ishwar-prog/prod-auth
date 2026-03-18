@@ -108,6 +108,20 @@ export async function refreshToken(req,res){
             expiresIn:"15m"
         }
     )
+
+    const newRefreshToken = jwt.sign({
+        id:decoded.id
+    },config.JWT_SECRET,{
+        expiresIn:"7d"
+    }
+)
+
+res.cookie("refreshtoken", newRefreshToken, {
+    httpOnly: true,
+    secure:true,
+    sameSite: "strict", 
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  })
     res.status(200).json({
         message:"Access Token refreshed successfully",
         accessToken
